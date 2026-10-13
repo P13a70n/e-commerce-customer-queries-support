@@ -1,4 +1,5 @@
 import csv
+from html import escape
 import math
 import os
 import re
@@ -11,6 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_google_genai import ChatGoogleGenerativeAI
+from streamlit.errors import StreamlitSecretNotFoundError
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -23,6 +25,17 @@ RETRIEVAL_STOP_WORDS = {
     "who", "will", "with", "you", "your",
 }
 load_dotenv(PROJECT_DIR / ".env")
+
+
+def get_setting(name, default=""):
+    value = os.getenv(name)
+    if value and value.strip():
+        return value.strip()
+    try:
+        value = st.secrets.get(name, default)
+    except StreamlitSecretNotFoundError:
+        return default
+    return str(value).strip() if value else default
 
 
 def load_knowledge(path=KNOWLEDGE_PATH):
@@ -123,13 +136,19 @@ def retrieve_knowledge(query, knowledge, limit=4):
 
 
 def build_llm():
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = get_setting("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY is missing. Add it to your .env file.")
+        raise ValueError(
+            "Gemini API key is missing. Set GEMINI_API_KEY in your local .env "
+            "or in the deployment's Streamlit Secrets settings."
+        )
     return ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+        model=get_setting("GEMINI_MODEL", "gemini-3.1-flash-lite"),
         google_api_key=api_key,
         temperature=0.2,
+        timeout=20,
+        max_retries=1,
+        max_output_tokens=512,
     )
 
 
@@ -186,12 +205,15 @@ def explain_provider_error(error):
     if "429" in message or "quota" in message or "rate limit" in message:
         return "The Gemini API quota or rate limit was reached. Check your Google AI plan."
     if "model" in message and ("not found" in message or "does not exist" in message):
-        return "The selected model was not found. Check the model name and provider setup."
+        return "The selected Gemini model was not found. Check GEMINI_MODEL."
+    if "timeout" in message or "timed out" in message:
+        return "Gemini did not respond within 20 seconds. Please try again."
     if "connection" in message or "connect" in message or "refused" in message:
-        return (
-            "Could not connect to Gemini. Check your network connection and try again."
-        )
-    return "The assistant could not get a response. Check the provider settings and try again."
+        return "Could not connect to Gemini. Check the deployment's network connection."
+    return (
+        "Gemini could not answer. Check the API key, model, and API quota, "
+        "then try again."
+    )
 
 
 def render_message(message):
@@ -206,7 +228,28 @@ def render_message(message):
 
 
 def main():
-    st.set_page_config(page_title="Northstar Support", page_icon="N", layout="centered")
+    knowledge = load_knowledge()
+    store_name = next(
+        (
+            record["content"]
+            for record in knowledge
+            if record["type"].strip().lower() == "store"
+            and record["title"].strip().lower() == "store_name"
+        ),
+        "the store",
+    )
+    notice = next(
+        (
+            record["content"]
+            for record in knowledge
+            if record["type"].strip().lower() == "notice"
+            and record["title"].strip().lower() == "disclaimer"
+        ),
+        "Answers are based only on the supplied support knowledge file.",
+    )
+    st.set_page_config(
+        page_title=f"{store_name} Support", page_icon="N", layout="centered"
+    )
     st.markdown(
         """
         <style>
@@ -226,19 +269,8 @@ def main():
         unsafe_allow_html=True,
     )
 
-    knowledge = load_knowledge()
-    store_name = next(
-        (
-            record["content"]
-            for record in knowledge
-            if record["type"].strip().lower() == "store"
-            and record["title"].strip().lower() == "store_name"
-        ),
-        "the store",
-    )
-
     with st.sidebar:
-        st.markdown(f"### {store_name}")
+        st.header(store_name)
         st.caption("Customer support desk")
         st.divider()
         st.markdown("**Provider**  \n`Gemini`")
@@ -247,7 +279,10 @@ def main():
             st.session_state.messages = []
             st.rerun()
 
-    st.markdown('<div class="support-kicker">NORTHSTAR MARKET · SUPPORT</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="support-kicker">{escape(store_name.upper())} · SUPPORT</div>',
+        unsafe_allow_html=True,
+    )
     st.title("How can we help?")
     st.caption("Ask about an order, return, damaged item, or refund.")
 
@@ -255,10 +290,7 @@ def main():
         st.session_state.messages = []
 
     if not st.session_state.messages:
-        st.info(
-            "This assistant uses sample policies and orders. "
-            "Replace `data/support_knowledge.csv` with approved store information."
-        )
+        st.info(notice)
 
     for message in st.session_state.messages:
         render_message(message)
@@ -283,7 +315,7 @@ def main():
             )
             retrieved_knowledge = retrieve_knowledge(retrieval_query, knowledge)
             with st.chat_message("assistant"):
-                with st.spinner("Checking the support information..."):
+                with st.spinner("Checking the support information (up to 20 seconds)..."):
                     response = chain.invoke(
                         {
                             "store_name": store_name,

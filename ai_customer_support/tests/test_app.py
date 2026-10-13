@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -69,16 +70,44 @@ class SupportAppTests(unittest.TestCase):
     def test_build_llm_configures_gemini(self):
         with patch.dict(
             "os.environ",
-            {"GEMINI_API_KEY": "test-key", "GEMINI_MODEL": "test-model"},
+            {"GEMINI_API_KEY": "test-key"},
             clear=True,
         ):
             llm = build_llm()
         self.assertIsInstance(llm, ChatGoogleGenerativeAI)
+        self.assertEqual(llm.model, "gemini-3.1-flash-lite")
+
+    def test_gemini_client_has_a_bounded_request_timeout_and_no_retries(self):
+        with (
+            patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}, clear=True),
+            patch("app.ChatGoogleGenerativeAI") as gemini_client,
+        ):
+            build_llm()
+        self.assertEqual(
+            gemini_client.call_args.kwargs["timeout"],
+            20,
+        )
+        self.assertEqual(gemini_client.call_args.kwargs["max_retries"], 1)
 
     def test_gemini_requires_an_api_key(self):
         with patch.dict("os.environ", {}, clear=True):
             with self.assertRaisesRegex(ValueError, "GEMINI_API_KEY"):
                 build_llm()
+
+    def test_gemini_key_can_be_loaded_from_streamlit_deployment_secrets(self):
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch(
+                "app.st",
+                SimpleNamespace(secrets={"GEMINI_API_KEY": "deployment-test-key"}),
+            ),
+        ):
+            llm = build_llm()
+        self.assertIsInstance(llm, ChatGoogleGenerativeAI)
+
+    def test_timeout_error_is_actionable(self):
+        error = explain_provider_error(TimeoutError("request timed out"))
+        self.assertIn("20 seconds", error)
 
 
 if __name__ == "__main__":

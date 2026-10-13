@@ -22,16 +22,23 @@ On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
 
 ## Configure Gemini
 
-Copy `.env.example` to `.env` and set the Gemini API key:
+If `.env` does not already exist, create it from `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-Set `GEMINI_API_KEY` in `.env`. The default model is `gemini-3.8-flash`; set
+Set `GEMINI_API_KEY` in `.env`. The default model is `gemini-3.1-flash-lite`; set
 `GEMINI_MODEL` to select another Gemini model.
 
 Never commit `.env`; it is excluded by `.gitignore`.
+
+For Streamlit Community Cloud, deploy the repository-root `app.py` and set
+`GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in the app's **Settings →
+Secrets** as TOML entries. The app reads both local environment variables and
+Streamlit deployment secrets. Gemini requests have a 20-second timeout and do
+not retry automatically, so the loading indicator stops when the request
+completes or times out.
 
 ## Run
 
