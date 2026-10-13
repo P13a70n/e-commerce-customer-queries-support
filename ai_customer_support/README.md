@@ -1,11 +1,11 @@
 # AI Customer Support Assistant
 
-A Streamlit chatbot for e-commerce support, built with LangChain. It classifies each question, uses prior messages for follow-ups, and retrieves relevant policies, intent examples, and sample orders from a JSON knowledge base. The included policies and orders are fictional demo data, not a trained model or a connection to a real store.
+A Streamlit chatbot for e-commerce support, built with LangChain and Google Gemini. It classifies each question, uses prior messages for follow-ups, and retrieves relevant policies, intent examples, and sample orders from a CSV knowledge base. The included policies and orders are fictional demo data, not a trained model or a connection to a real store.
 
 ## Requirements
 
 - Python 3.10 or newer
-- One LLM provider: Ollama running locally, or an OpenRouter API key
+- A Google Gemini API key
 
 ## Install
 
@@ -20,23 +20,16 @@ pip install -r requirements.txt
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
 
-## Choose a provider
+## Configure Gemini
 
-Copy `.env.example` to `.env`. The default provider is Ollama:
+Copy `.env.example` to `.env` and set the Gemini API key:
 
 ```bash
-ollama pull llama3.2
+cp .env.example .env
 ```
 
-Make sure the Ollama service is running, then leave `LLM_PROVIDER=ollama` in `.env`. To use another installed model, update `OLLAMA_MODEL`.
-
-For OpenRouter, set these values in `.env` instead:
-
-```dotenv
-LLM_PROVIDER=openrouter
-OPENROUTER_API_KEY=your-key-here
-OPENROUTER_MODEL=openai/gpt-4o-mini
-```
+Set `GEMINI_API_KEY` in `.env`. The default model is `gemini-3.8-flash`; set
+`GEMINI_MODEL` to select another Gemini model.
 
 Never commit `.env`; it is excluded by `.gitignore`.
 
@@ -50,7 +43,7 @@ Streamlit opens the chat UI in your browser. Use **Clear conversation** in the s
 
 ## Data and evaluation
 
-Edit `data/support_knowledge.json` to replace the example policies, intent examples, and sample orders. Keep only approved, non-sensitive information in this file. Each chat turn retrieves up to four matching entries using BM25 text relevance and sends those entries as context to the LLM. The prompt also asks the LLM to label one of six query categories and avoid claiming it performed actions. Retrieval and classification are not guaranteed to be accurate.
+Edit `data/support_knowledge.csv` to replace the example policies, intent examples, and sample orders. Keep its `type`, `title`, and `content` columns, and only include approved, non-sensitive information. Each chat turn ranks matching rows with BM25 text relevance and sends up to four retrieved entries, along with the conversation, to Gemini. This file-based retrieval-augmented generation (RAG) grounds Gemini's answers in the supplied store information; it does not train or fine-tune the model. The prompt also asks Gemini to label one of six query categories and avoid claiming it performed actions. Retrieval and classification are not guaranteed to be accurate.
 
 Run the offline tests with:
 

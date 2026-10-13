@@ -1,0 +1,15 @@
+type,title,content
+store,store_name,Northstar Market (sample store)
+notice,disclaimer,"All policies and order records in this file are fictional demo data. Replace them with your store's approved information before real customer use."
+policy,Shipping and delayed orders,"Standard delivery usually takes 3-5 business days after dispatch. Carrier delays can extend this estimate. Customers can share an order number to check the sample order records."
+policy,Returns,"Eligible unused items can be returned within 30 days of delivery. The customer should provide the order number and item name so support can explain the next steps."
+policy,Damaged products,"For an item that arrived damaged, ask the customer for the order number and a description of the damage. A support agent must review the case; the assistant cannot approve replacements or refunds."
+policy,Refunds,"After an approved refund is processed, it usually appears on the original payment method within 5-10 business days. The assistant cannot issue or verify a real refund."
+intent,order_status,"Where is my order?; My package is late; Can you check my order?"
+intent,return_request,"How do I return this?; Can I send back an unused item?; I want to return my purchase"
+intent,damaged_item,"My item arrived broken; The product is damaged; I received a cracked mug"
+intent,refund_status,"When will my refund arrive?; I have not received my refund; How long do refunds take?"
+intent,product_question,"What is this product made of?; Does this item come in blue?"
+intent,other,"I need help with something else; Can I speak to a person?"
+sample_order,NS-1048,"Status: In transit; delayed by severe weather. Estimated delivery: 2026-10-15. Items: ceramic mug."
+sample_order,NS-2091,"Status: Delivered. Estimated delivery: 2026-10-08. Items: cotton tote bag."

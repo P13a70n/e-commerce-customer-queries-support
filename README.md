@@ -8,18 +8,15 @@ Install the app requirements into the Python environment used by `streamlit`:
 python -m pip install -r ai_customer_support/requirements.txt
 ```
 
-The app uses Ollama by default. Start its service in a separate terminal and
-leave it running:
+Set a Google Gemini API key in `ai_customer_support/.env`. If that file does
+not already exist, create it from the sample:
 
 ```bash
-ollama serve
+cp ai_customer_support/.env.example ai_customer_support/.env
 ```
 
-In another terminal, download the configured model:
-
-```bash
-ollama pull llama3.2
-```
+Set `GEMINI_API_KEY` in that `.env` file. The default model is
+`gemini-3.8-flash`.
 
 Then start Streamlit from this repository root:
 
@@ -28,8 +25,8 @@ streamlit run app.py
 ```
 
 Alternatively, follow [the app README](ai_customer_support/README.md) to run
-the app from its own directory or configure OpenRouter.
+the app from its own directory.
 
-Chat responses retrieve relevant policies, intent examples, and sample orders
-from `ai_customer_support/data/support_knowledge.json` before sending the
-customer's question to the language model.
+Chat uses BM25 retrieval over
+`ai_customer_support/data/support_knowledge.csv` and sends relevant rows to
+Gemini to ground its response.

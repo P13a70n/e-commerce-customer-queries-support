@@ -1,8 +1,9 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app import (
     build_llm,
@@ -14,11 +15,19 @@ from app import (
 
 
 class SupportAppTests(unittest.TestCase):
-    def test_demo_knowledge_has_policies_intents_and_orders(self):
+    def test_csv_knowledge_has_policies_intents_and_orders(self):
         knowledge = load_knowledge()
-        self.assertTrue(knowledge["policies"])
-        self.assertTrue(knowledge["intents"])
-        self.assertTrue(knowledge["sample_orders"])
+        types = {record["type"] for record in knowledge}
+        self.assertIn("policy", types)
+        self.assertIn("intent", types)
+        self.assertIn("sample_order", types)
+
+    def test_csv_knowledge_rejects_incomplete_rows(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "knowledge.csv"
+            path.write_text("type,title,content\npolicy,Returns,\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "row 2"):
+                load_knowledge(path)
 
     def test_retrieval_returns_the_matching_sample_order(self):
         retrieved = retrieve_knowledge(
@@ -57,31 +66,18 @@ class SupportAppTests(unittest.TestCase):
         self.assertIn("credentials", error)
         self.assertNotIn("unauthorized", error)
 
-    def test_build_llm_configures_ollama(self):
+    def test_build_llm_configures_gemini(self):
         with patch.dict(
             "os.environ",
-            {"LLM_PROVIDER": "ollama", "OLLAMA_MODEL": "test-model"},
+            {"GEMINI_API_KEY": "test-key", "GEMINI_MODEL": "test-model"},
             clear=True,
         ):
             llm = build_llm()
-        self.assertIsInstance(llm, ChatOllama)
+        self.assertIsInstance(llm, ChatGoogleGenerativeAI)
 
-    def test_build_llm_configures_openrouter(self):
-        with patch.dict(
-            "os.environ",
-            {
-                "LLM_PROVIDER": "openrouter",
-                "OPENROUTER_API_KEY": "test-key",
-                "OPENROUTER_MODEL": "test/model",
-            },
-            clear=True,
-        ):
-            llm = build_llm()
-        self.assertIsInstance(llm, ChatOpenAI)
-
-    def test_openrouter_requires_an_api_key(self):
-        with patch.dict("os.environ", {"LLM_PROVIDER": "openrouter"}, clear=True):
-            with self.assertRaisesRegex(ValueError, "OPENROUTER_API_KEY"):
+    def test_gemini_requires_an_api_key(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "GEMINI_API_KEY"):
                 build_llm()
 
 
