@@ -9,6 +9,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app import (
     build_llm,
     explain_provider_error,
+    get_active_theme,
+    get_theme_css,
     load_knowledge,
     retrieve_knowledge,
     split_category,
@@ -108,6 +110,51 @@ class SupportAppTests(unittest.TestCase):
     def test_timeout_error_is_actionable(self):
         error = explain_provider_error(TimeoutError("request timed out"))
         self.assertIn("20 seconds", error)
+
+    def test_active_theme_uses_streamlit_session_theme(self):
+        for mode in ("dark", "light"):
+            with self.subTest(mode=mode), patch(
+                "app.st",
+                SimpleNamespace(
+                    context=SimpleNamespace(theme=SimpleNamespace(type=mode)),
+                ),
+            ):
+                self.assertEqual(get_active_theme(), mode)
+
+    def test_active_theme_falls_back_to_configured_theme(self):
+        with patch(
+            "app.st",
+            SimpleNamespace(
+                context=SimpleNamespace(theme=SimpleNamespace(type=None)),
+                get_option=lambda _: "dark",
+            ),
+        ):
+            self.assertEqual(get_active_theme(), "dark")
+
+    def test_theme_css_only_applies_dark_overrides_for_dark_theme(self):
+        with patch(
+            "app.st",
+            SimpleNamespace(
+                context=SimpleNamespace(theme=SimpleNamespace(type="light")),
+                get_option=lambda _: "dark",
+            ),
+        ):
+            light_css = get_theme_css()
+        self.assertNotIn("#0e1117", light_css)
+
+        with patch(
+            "app.st",
+            SimpleNamespace(
+                context=SimpleNamespace(theme=SimpleNamespace(type="dark")),
+                get_option=lambda _: "light",
+            ),
+        ):
+            dark_css = get_theme_css()
+        self.assertIn("#ffffff", dark_css.lower())
+        self.assertIn("#0e1117", dark_css)
+        self.assertIn('[data-testid="stSidebar"]', dark_css)
+        self.assertIn('[data-testid="stChatInput"] textarea', dark_css)
+        self.assertNotIn("@media (prefers-color-scheme", dark_css)
 
 
 if __name__ == "__main__":

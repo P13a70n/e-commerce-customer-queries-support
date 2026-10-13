@@ -18,6 +18,220 @@ from streamlit.errors import StreamlitSecretNotFoundError
 PROJECT_DIR = Path(__file__).resolve().parent
 KNOWLEDGE_PATH = PROJECT_DIR / "data" / "support_knowledge.csv"
 KNOWLEDGE_FIELDS = {"type", "title", "content"}
+LIGHT_MODE_CSS = """
+    .stApp {
+        background-color: var(--background-color, #f5f7f3);
+        color: var(--text-color, #172a35);
+    }
+    [data-testid="stHeader"] { background-color: transparent; }
+    [data-testid="stChatMessage"] {
+        border: 1px solid var(--secondary-background-color, #e9eeea);
+        border-radius: 8px;
+        padding: .8rem 1rem;
+        background-color: var(--secondary-background-color, #ffffff);
+        color: var(--text-color, #172a35);
+    }
+    [data-testid="stChatInput"] {
+        background-color: var(--secondary-background-color, #ffffff);
+        border-color: var(--primary-color, #146b68);
+    }
+    [data-testid="stChatInput"] textarea {
+        background-color: var(--secondary-background-color, #ffffff);
+        color: var(--text-color, #172a35);
+        caret-color: var(--text-color, #172a35);
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: var(--text-color, #172a35);
+        opacity: .7;
+    }
+    [data-testid="stChatInput"] button,
+    [data-testid="stChatInput"] button svg {
+        color: var(--text-color, #172a35);
+    }
+    .stApp button { color: var(--text-color, #172a35); }
+    .support-kicker {
+        color: var(--primary-color, #146b68);
+        font-size: .76rem;
+        font-weight: 700;
+    }
+"""
+DARK_MODE_CSS = """
+    :root,
+    body,
+    [data-testid="stAppViewContainer"],
+    .stApp {
+        color-scheme: dark;
+        --background-color: #0e1117;
+        --secondary-background-color: #161b22;
+        --text-color: #ffffff;
+        --primary-color: #8ab4f8;
+        background-color: #0e1117 !important;
+        color: #ffffff !important;
+    }
+    .stApp *,
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapseButton"] {
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] > div,
+    [data-testid="stSidebarContent"] {
+        background-color: #111820 !important;
+    }
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stMainMenu"],
+    [data-testid="stAppDeployButton"] {
+        background-color: #0e1117 !important;
+    }
+    button,
+    [data-testid="stButton"] button,
+    [data-testid="stFormSubmitButton"] button,
+    [data-testid="stDownloadButton"] button,
+    [data-testid="stChatInput"] button {
+        color: #ffffff !important;
+        background-color: #1b2430 !important;
+        border: 1px solid #8995a3 !important;
+    }
+    button:hover,
+    [data-testid="stButton"] button:hover,
+    [data-testid="stFormSubmitButton"] button:hover,
+    [data-testid="stDownloadButton"] button:hover,
+    [data-testid="stChatInput"] button:hover {
+        color: #ffffff !important;
+        background-color: #293646 !important;
+        border-color: #ffffff !important;
+    }
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [role="combobox"]:focus-visible {
+        outline: 2px solid #ffffff !important;
+        outline-offset: 2px;
+    }
+    input,
+    textarea,
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stDateInput"] input,
+    [data-testid="stTimeInput"] input,
+    [data-testid="stTextArea"] textarea,
+    [data-baseweb="input"] input,
+    [data-baseweb="textarea"] textarea,
+    [data-baseweb="select"] > div,
+    [data-baseweb="tag"] {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+        background-color: #161b22 !important;
+        border-color: #687585 !important;
+    }
+    input::placeholder,
+    textarea::placeholder,
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        opacity: .75 !important;
+    }
+    [data-testid="stChatInput"],
+    [data-testid="stChatMessage"],
+    [data-testid="stForm"],
+    [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stDataFrame"],
+    [data-testid="stDataEditor"],
+    [data-testid="stTable"],
+    [data-testid="stTabs"],
+    [data-testid="stAlert"],
+    [data-testid="stMetric"],
+    [data-testid="stExpander"],
+    [data-testid="stPopover"],
+    [data-testid="stRadio"],
+    [data-testid="stCheckbox"],
+    [data-testid="stSelectbox"],
+    [data-testid="stMultiSelect"],
+    [data-testid="stDateInput"],
+    [data-testid="stTimeInput"],
+    [data-testid="stNumberInput"],
+    [data-testid="stTextInput"],
+    [data-testid="stTextArea"] {
+        color: #ffffff !important;
+        background-color: #161b22 !important;
+        border-color: #687585 !important;
+    }
+    [data-baseweb="popover"],
+    [data-baseweb="popover"] *,
+    [data-baseweb="menu"],
+    [data-baseweb="menu"] *,
+    [data-baseweb="select"],
+    [data-baseweb="select"] *,
+    [role="listbox"],
+    [role="listbox"] *,
+    [role="option"],
+    [role="menu"],
+    [role="menu"] *,
+    [role="menuitem"] {
+        color: #ffffff !important;
+        background-color: #161b22 !important;
+    }
+    [role="option"]:hover,
+    [role="menuitem"]:hover,
+    [role="option"][aria-selected="true"] {
+        color: #ffffff !important;
+        background-color: #293646 !important;
+    }
+    [role="tab"],
+    [role="radio"],
+    [role="checkbox"],
+    [role="switch"],
+    [data-baseweb="checkbox"],
+    [data-baseweb="radio"],
+    [data-testid="stSlider"] {
+        color: #ffffff !important;
+        accent-color: #ffffff;
+    }
+    [role="tab"][aria-selected="true"] {
+        border-bottom-color: #ffffff !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+        background-color: #161b22 !important;
+    }
+    [data-testid="stHeader"] button,
+    [data-testid="stToolbar"] button,
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="stSidebarCollapseButton"] button,
+    button svg,
+    button svg *,
+    [data-testid="stHeader"] svg,
+    [data-testid="stHeader"] svg *,
+    [data-testid="stToolbar"] svg,
+    [data-testid="stToolbar"] svg *,
+    [data-testid="stMainMenu"] svg,
+    [data-testid="stMainMenu"] svg *,
+    [data-testid="stAppDeployButton"] svg,
+    [data-testid="stAppDeployButton"] svg *,
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="stSidebarCollapsedControl"] svg *,
+    [data-testid="stSidebarCollapseButton"] svg {
+        color: #ffffff !important;
+        fill: currentColor !important;
+        stroke: currentColor !important;
+    }
+    pre,
+    code {
+        color: #ffffff !important;
+        background-color: #161b22 !important;
+    }
+    ::selection {
+        color: #ffffff !important;
+        background-color: #365a7c !important;
+    }
+"""
 RETRIEVAL_STOP_WORDS = {
     "a", "about", "an", "and", "are", "as", "at", "be", "can", "do", "does",
     "for", "from", "have", "how", "i", "in", "is", "it", "me", "my", "of",
@@ -36,6 +250,24 @@ def get_setting(name, default=""):
     except StreamlitSecretNotFoundError:
         return default
     return str(value).strip() if value else default
+
+
+def get_active_theme():
+    context = getattr(st, "context", None)
+    theme = getattr(context, "theme", None)
+    theme_type = getattr(theme, "type", None)
+    if theme_type in {"dark", "light"}:
+        return theme_type
+
+    configured_theme = st.get_option("theme.base")
+    return configured_theme if configured_theme in {"dark", "light"} else "light"
+
+
+def get_theme_css():
+    css = LIGHT_MODE_CSS
+    if get_active_theme() == "dark":
+        css += DARK_MODE_CSS
+    return css
 
 
 def load_knowledge(path=KNOWLEDGE_PATH):
@@ -250,71 +482,7 @@ def main():
     st.set_page_config(
         page_title=f"{store_name} Support", page_icon="N", layout="centered"
     )
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background-color: var(--background-color, #f5f7f3);
-            color: var(--text-color, #172a35);
-        }
-        [data-testid="stHeader"] { background-color: transparent; }
-        [data-testid="stChatMessage"] {
-            border: 1px solid var(--secondary-background-color, #e9eeea);
-            border-radius: 8px;
-            padding: .8rem 1rem;
-            background-color: var(--secondary-background-color, #ffffff);
-            color: var(--text-color, #172a35);
-        }
-        [data-testid="stChatInput"] {
-            background-color: var(--secondary-background-color, #ffffff);
-            border-color: var(--primary-color, #146b68);
-        }
-        [data-testid="stChatInput"] textarea {
-            background-color: var(--secondary-background-color, #ffffff);
-            color: var(--text-color, #172a35);
-            caret-color: var(--text-color, #172a35);
-        }
-        [data-testid="stChatInput"] textarea::placeholder {
-            color: var(--text-color, #172a35);
-            opacity: .7;
-        }
-        [data-testid="stChatInput"] button,
-        [data-testid="stChatInput"] button svg {
-            color: var(--text-color, #172a35);
-        }
-        .stApp button { color: var(--text-color, #172a35); }
-        .support-kicker {
-            color: var(--primary-color, #146b68);
-            font-size: .76rem;
-            font-weight: 700;
-        }
-        @media (prefers-color-scheme: dark) {
-            [data-testid="stChatInput"] textarea {
-                color: #f5f5f5 !important;
-                -webkit-text-fill-color: #f5f5f5;
-                caret-color: #f5f5f5;
-            }
-            [data-testid="stHeader"] button svg,
-            [data-testid="stHeader"] button svg path,
-            [data-testid="stSidebarCollapsedControl"],
-            [data-testid="stSidebarCollapsedControl"] svg,
-            [data-testid="stSidebarCollapsedControl"] svg path,
-            [data-testid="stSidebarCollapsedControl"] button,
-            [data-testid="stSidebarCollapsedControl"] button svg,
-            [data-testid="stSidebarCollapseButton"],
-            [data-testid="stSidebarCollapseButton"] svg,
-            [data-testid="stSidebarCollapseButton"] svg path,
-            [data-testid="stSidebarCollapseButton"] button,
-            [data-testid="stSidebarCollapseButton"] button svg {
-                color: #f5f5f5 !important;
-                fill: currentColor;
-                stroke: currentColor;
-            }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"<style>{get_theme_css()}</style>", unsafe_allow_html=True)
 
     with st.sidebar:
         st.header(store_name)

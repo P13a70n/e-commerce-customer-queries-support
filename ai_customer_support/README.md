@@ -48,6 +48,10 @@ streamlit run app.py
 
 Streamlit opens the chat UI in your browser. Use **Clear conversation** in the sidebar to reset the current session. Conversation history is kept for follow-up questions during that browser session.
 
+The interface follows the active Streamlit theme automatically. Dark mode uses
+high-contrast white text and dark widget surfaces; light mode retains the
+existing light appearance.
+
 ## Data and evaluation
 
 Edit `data/support_knowledge.csv` to replace the example policies, intent examples, and sample orders. Keep its `type`, `title`, and `content` columns, and only include approved, non-sensitive information. Each chat turn ranks matching rows with BM25 text relevance and sends up to four retrieved entries, along with the conversation, to Gemini. This file-based retrieval-augmented generation (RAG) grounds Gemini's answers in the supplied store information; it does not train or fine-tune the model. The prompt also asks Gemini to label one of six query categories and avoid claiming it performed actions. Retrieval and classification are not guaranteed to be accurate.
