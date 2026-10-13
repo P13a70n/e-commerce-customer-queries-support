@@ -253,17 +253,41 @@ def main():
     st.markdown(
         """
         <style>
-        :root { --ink: #172a35; --teal: #146b68; --paper: #f5f7f3; }
-        .stApp { background: var(--paper); color: var(--ink); }
-        [data-testid="stHeader"] { background: transparent; }
+        .stApp {
+            background-color: var(--background-color, #f5f7f3);
+            color: var(--text-color, #172a35);
+        }
+        [data-testid="stHeader"] { background-color: transparent; }
         [data-testid="stChatMessage"] {
-            border: 1px solid rgba(23, 42, 53, .10);
+            border: 1px solid var(--secondary-background-color, #e9eeea);
             border-radius: 8px;
             padding: .8rem 1rem;
-            background: rgba(255, 255, 255, .78);
+            background-color: var(--secondary-background-color, #ffffff);
+            color: var(--text-color, #172a35);
         }
-        [data-testid="stChatInput"] { border-color: rgba(20, 107, 104, .35); }
-        .support-kicker { color: var(--teal); font-size: .76rem; font-weight: 700; }
+        [data-testid="stChatInput"] {
+            background-color: var(--secondary-background-color, #ffffff);
+            border-color: var(--primary-color, #146b68);
+        }
+        [data-testid="stChatInput"] textarea {
+            background-color: var(--secondary-background-color, #ffffff);
+            color: var(--text-color, #172a35);
+            caret-color: var(--text-color, #172a35);
+        }
+        [data-testid="stChatInput"] textarea::placeholder {
+            color: var(--text-color, #172a35);
+            opacity: .7;
+        }
+        [data-testid="stChatInput"] button,
+        [data-testid="stChatInput"] button svg {
+            color: var(--text-color, #172a35);
+        }
+        .stApp button { color: var(--text-color, #172a35); }
+        .support-kicker {
+            color: var(--primary-color, #146b68);
+            font-size: .76rem;
+            font-weight: 700;
+        }
         </style>
         """,
         unsafe_allow_html=True,
