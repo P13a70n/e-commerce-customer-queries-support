@@ -48,9 +48,9 @@ streamlit run app.py
 
 Streamlit opens the chat UI in your browser. Use **Clear conversation** in the sidebar to reset the current session. Conversation history is kept for follow-up questions during that browser session.
 
-The interface follows the active Streamlit theme automatically. Dark mode uses
-high-contrast white text and dark widget surfaces; light mode retains the
-existing light appearance.
+The interface follows Streamlit's active theme colors automatically, including
+when switching themes without restarting the app. Light mode keeps Streamlit's
+default appearance; input text, icons, and controls use the active theme colors.
 
 ## Data and evaluation
 
