@@ -288,6 +288,29 @@ def main():
             font-size: .76rem;
             font-weight: 700;
         }
+        @media (prefers-color-scheme: dark) {
+            [data-testid="stChatInput"] textarea {
+                color: #f5f5f5 !important;
+                -webkit-text-fill-color: #f5f5f5;
+                caret-color: #f5f5f5;
+            }
+            [data-testid="stHeader"] button svg,
+            [data-testid="stHeader"] button svg path,
+            [data-testid="stSidebarCollapsedControl"],
+            [data-testid="stSidebarCollapsedControl"] svg,
+            [data-testid="stSidebarCollapsedControl"] svg path,
+            [data-testid="stSidebarCollapsedControl"] button,
+            [data-testid="stSidebarCollapsedControl"] button svg,
+            [data-testid="stSidebarCollapseButton"],
+            [data-testid="stSidebarCollapseButton"] svg,
+            [data-testid="stSidebarCollapseButton"] svg path,
+            [data-testid="stSidebarCollapseButton"] button,
+            [data-testid="stSidebarCollapseButton"] button svg {
+                color: #f5f5f5 !important;
+                fill: currentColor;
+                stroke: currentColor;
+            }
+        }
         </style>
         """,
         unsafe_allow_html=True,
