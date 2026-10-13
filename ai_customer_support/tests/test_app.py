@@ -4,7 +4,13 @@ from unittest.mock import patch
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
-from app import build_llm, explain_provider_error, load_knowledge, split_category
+from app import (
+    build_llm,
+    explain_provider_error,
+    load_knowledge,
+    retrieve_knowledge,
+    split_category,
+)
 
 
 class SupportAppTests(unittest.TestCase):
@@ -13,6 +19,27 @@ class SupportAppTests(unittest.TestCase):
         self.assertTrue(knowledge["policies"])
         self.assertTrue(knowledge["intents"])
         self.assertTrue(knowledge["sample_orders"])
+
+    def test_retrieval_returns_the_matching_sample_order(self):
+        retrieved = retrieve_knowledge(
+            "Where is my order NS-1048?", load_knowledge()
+        )
+        self.assertIn("NS-1048", retrieved)
+        self.assertIn("In transit; delayed by severe weather", retrieved)
+        self.assertNotIn("NS-2091", retrieved)
+
+    def test_retrieval_returns_the_relevant_policy(self):
+        retrieved = retrieve_knowledge(
+            "How long do I have to return an unused item?", load_knowledge()
+        )
+        self.assertIn("Policy: Returns", retrieved)
+        self.assertIn("within 30 days of delivery", retrieved)
+
+    def test_retrieval_returns_no_documents_for_unmatched_queries(self):
+        retrieved = retrieve_knowledge(
+            "Tell me a joke about the moon", load_knowledge()
+        )
+        self.assertEqual(retrieved, "")
 
     def test_response_category_is_separated_from_answer(self):
         category, answer = split_category(

@@ -1,6 +1,8 @@
 import json
+import math
 import os
 import re
+from collections import Counter
 from pathlib import Path
 
 import streamlit as st
@@ -14,12 +16,94 @@ from langchain_openai import ChatOpenAI
 
 PROJECT_DIR = Path(__file__).resolve().parent
 KNOWLEDGE_PATH = PROJECT_DIR / "data" / "support_knowledge.json"
+RETRIEVAL_STOP_WORDS = {
+    "a", "about", "an", "and", "are", "as", "at", "be", "can", "do", "does",
+    "for", "from", "have", "how", "i", "in", "is", "it", "me", "my", "of",
+    "on", "or", "the", "this", "to", "we", "what", "when", "where", "which",
+    "who", "will", "with", "you", "your",
+}
 load_dotenv(PROJECT_DIR / ".env")
 
 
 def load_knowledge(path=KNOWLEDGE_PATH):
     with path.open(encoding="utf-8") as knowledge_file:
         return json.load(knowledge_file)
+
+
+def retrieve_knowledge(query, knowledge, limit=4):
+    documents = [
+        ("policy", f"Policy: {policy['topic']}\n{policy['details']}")
+        for policy in knowledge.get("policies", [])
+    ]
+    documents.extend(
+        (
+            "intent",
+            f"Intent: {intent['category']}\nExamples: {' '.join(intent['examples'])}",
+        )
+        for intent in knowledge.get("intents", [])
+    )
+    documents.extend(
+        ("order", f"Sample order: {json.dumps(order, ensure_ascii=False)}")
+        for order in knowledge.get("sample_orders", [])
+    )
+
+    tokenized_documents = [
+        re.findall(r"[a-z0-9]+", document.lower())
+        for _, document in documents
+    ]
+    query_terms = set(re.findall(r"[a-z0-9]+", query.lower())) - RETRIEVAL_STOP_WORDS
+    if not query_terms or not documents:
+        return ""
+
+    exact_order_numbers = {
+        order["order_number"].lower()
+        for order in knowledge.get("sample_orders", [])
+        if order["order_number"].lower() in query.lower()
+    }
+    document_frequency = Counter(
+        term
+        for terms in tokenized_documents
+        for term in set(terms)
+    )
+    average_length = sum(map(len, tokenized_documents)) / len(tokenized_documents)
+    ranked_documents = []
+
+    for index, terms in enumerate(tokenized_documents):
+        kind, document = documents[index]
+        if (
+            kind == "order"
+            and exact_order_numbers
+            and not any(order_number in document.lower() for order_number in exact_order_numbers)
+        ):
+            continue
+        term_frequency = Counter(terms)
+        score = 0.0
+        for term in query_terms:
+            frequency = term_frequency[term]
+            if not frequency:
+                continue
+            inverse_frequency = math.log(
+                1
+                + (len(documents) - document_frequency[term] + 0.5)
+                / (document_frequency[term] + 0.5)
+            )
+            length_normalizer = 1.5 * (
+                1 - 0.75 + 0.75 * len(terms) / average_length
+            )
+            score += (
+                inverse_frequency
+                * frequency
+                * (1.5 + 1)
+                / (frequency + length_normalizer)
+            )
+        if score:
+            kind_weight = {"policy": 1.25, "intent": 0.75, "order": 1.5}[kind]
+            ranked_documents.append((score * kind_weight, index))
+
+    ranked_documents.sort(key=lambda result: result[0], reverse=True)
+    return "\n\n".join(
+        documents[index][1] for _, index in ranked_documents[:limit]
+    )
 
 
 def build_llm():
@@ -176,12 +260,24 @@ def main():
 
         try:
             chain = build_chain(build_llm())
+            retrieval_query = " ".join(
+                [
+                    *(
+                        message["content"]
+                        for message in previous_messages[-4:]
+                        if message["role"] == "user"
+                    ),
+                    question,
+                ]
+            )
+            retrieved_knowledge = retrieve_knowledge(retrieval_query, knowledge)
             with st.chat_message("assistant"):
                 with st.spinner("Checking the support information..."):
                     response = chain.invoke(
                         {
                             "store_name": knowledge["store_name"],
-                            "knowledge": json.dumps(knowledge, indent=2),
+                            "knowledge": retrieved_knowledge
+                            or "No directly relevant information was found in the support knowledge base.",
                             "history": to_langchain_history(previous_messages),
                             "input": question,
                         }
